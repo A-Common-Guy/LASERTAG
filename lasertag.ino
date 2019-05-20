@@ -15,38 +15,40 @@ int th = 600; //min light val
 int pmv = 10;
 int GOL = 4;
 bool nothit = true;
-int fr = 200;
-int frm = (fr * 1000);
+int fr = 400;
 int RECV_PIN = 4;
 IRrecv irrecv(RECV_PIN);
 IRsend irsend;
 decode_results results;
 
+bool en = true;
+
 ////// quando ti scocci di scrivere una libreria esterna e quindi la crei nel file stesso (almeno va)!!
 
-typedef struct basetimer{
+typedef struct basetimer {
   int trigtime;
   void (*trig)();
   uint32_t toptimer;
   uint32_t basetimer;
-  bool enabled=false;
-  
-  void control(){
-    if (millis()>toptimer and enabled){
-      basetimer=millis();
-      toptimer=millis()+trigtime;
+  bool enabled = false;
+
+  void control() {
+    if (millis() > toptimer and enabled) {
+      basetimer = millis();
+      toptimer = millis() + trigtime;
       trig();
     }
   }
-  void enable(){
-    enabled=true;
-    basetimer=millis();
-    toptimer=basetimer+trigtime;
+  void enable() {
+    
+    enabled = true;
+    basetimer = millis();
+    toptimer = basetimer + trigtime;
   }
-  void disable(){
-    enabled=false;
+  void disable() {
+    enabled = false;
   }
-}NiceTimer;
+} NiceTimer;
 
 //// qui finisce la libreria
 
@@ -59,16 +61,16 @@ void setup() {
   irrecv.enableIRIn();
   attachInterrupt(digitalPinToInterrupt(2), trigger, FALLING);
   Serial.begin(9600);
-  timer.trigtime=2000;
+  timer.trigtime = fr;
 
-  timer.trig=&semiauto;
-    
-  
+  timer.trig = &semiauto;
+
+
 }
 
 void loop() {
   timer.control();
-  
+
 
   if (irrecv.decode(&results)) {
     Serial.println(results.value, HEX);
@@ -99,22 +101,24 @@ bool enemyfire(uint16_t results_value) {
 }
 
 void trigger() {
-  
-  for (int i = 0; i < 3; i++) {
-    interrupts();
-    irsend.sendSony(0xa90, 12);
-
-    
-
-
-
+  if (en) {
+    for (int i = 0; i < 3; i++) {
+      interrupts();
+      irsend.sendSony(0xa90, 12);
+      timer.enable();
+    }
   }
   irrecv.enableIRIn();
-  detachInterrupt(digitalPinToInterrupt(2));
-  timer.enable();
+  en = false;
+  //detachInterrupt(digitalPinToInterrupt(2));
+  
+    
+
 }
 
 void semiauto() {
-  attachInterrupt(digitalPinToInterrupt(2), trigger, FALLING);
+
+  //attachInterrupt(digitalPinToInterrupt(2), trigger, FALLING);
   timer.disable();
+  en = true;
 }
